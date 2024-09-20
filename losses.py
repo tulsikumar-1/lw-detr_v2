@@ -213,6 +213,8 @@ class SetCriterion(nn.Module):
                     box_ops.box_cxcywh_to_xyxy(src_boxes),
                     box_ops.box_cxcywh_to_xyxy(target_boxes)))
             losses['loss_giou'] = loss_giou.sum() / num_boxes
+            losses['loss_ciou'] = 0
+            
             
         return losses
 
