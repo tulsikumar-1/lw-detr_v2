@@ -82,10 +82,10 @@ class HungarianMatcher(nn.Module):
           raise ValueError("Predicted boxes contain negative values")
         
         giou = generalized_box_iou(box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
-        cost_giou = -giou
+        cost_giou = 1-giou
         
         ciou_loss = ciou(box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
-        cost_ciou = -ciou_loss
+        cost_ciou = 1-ciou_loss
 
         # Compute the classification cost.
         alpha = self.focal_alpha

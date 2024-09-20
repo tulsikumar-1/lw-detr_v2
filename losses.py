@@ -208,6 +208,15 @@ class SetCriterion(nn.Module):
                     box_ops.box_cxcywh_to_xyxy(src_boxes),
                     box_ops.box_cxcywh_to_xyxy(target_boxes)))
             losses['loss_bbox'] = loss_ciou.sum() / num_boxes
+        else:
+            loss_bbox = F.l1_loss(src_boxes, target_boxes, reduction='none')
+            losses['loss_bbox'] = loss_bbox.sum() / num_boxes
+            
+        if not self.ciou_loss:
+          loss_giou = 1 - torch.diag(box_ops.generalized_box_iou(
+                  box_ops.box_cxcywh_to_xyxy(src_boxes),
+                  box_ops.box_cxcywh_to_xyxy(target_boxes)))
+          losses['loss_giou'] = loss_giou.sum() / num_boxes
             
             
             
