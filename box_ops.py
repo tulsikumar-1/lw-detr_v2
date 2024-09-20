@@ -93,7 +93,7 @@ def ciou(boxes1, boxes2):
     iou = iou.clamp(min=0.0, max=1.0)  # Ensure IoU stays between 0 and 1
 
     # Compute centers of both boxes
-    center1 = (boxes1[:, None, :2] + boxes1[:, None, 2:]) / 2  # [N, M, 2]
+    center1 = (boxes1[:, :2] + boxes1[:, 2:]) / 2  # [N, 2]
     center2 = (boxes2[:, :2] + boxes2[:, 2:]) / 2  # [M, 2]
 
     # Compute the Euclidean distance between box centers (L2 loss)
