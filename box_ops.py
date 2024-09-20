@@ -93,7 +93,7 @@ def ciou(boxes1, boxes2):
     iou = iou.clamp(min=0.0, max=1.0)  # Ensure IoU stays between 0 and 1
 
     # Compute centers of both boxes
-    center1 = (boxes1[:, :2] + boxes1[:, 2:]) / 2  # [N, 2]
+    center1 = (boxes1[:, None, :2] + boxes1[:, None, 2:]) / 2  # [N, M, 2]
     center2 = (boxes2[:, :2] + boxes2[:, 2:]) / 2  # [M, 2]
 
     # Compute the Euclidean distance between box centers (L2 loss)
@@ -102,7 +102,7 @@ def ciou(boxes1, boxes2):
     # Compute the diagonal distance of the smallest enclosing box
     lt = torch.min(boxes1[:, None, :2], boxes2[:, :2])  # [N, M, 2]
     rb = torch.max(boxes1[:, None, 2:], boxes2[:, 2:])  # [N, M, 2]
-    enclosing_diag = ((rb - lt) ** 2).sum(dim=-1).clamp(min=1e-7)  # [N, M] Add epsilon to avoid divide by zero
+    enclosing_diag = ((rb - lt) ** 2).sum(dim=-1).clamp(min=1e-7)  # [N, M]
 
     # Aspect ratio consistency term
     wh1 = boxes1[:, None, 2:] - boxes1[:, None, :2]  # width and height of boxes1
@@ -115,7 +115,10 @@ def ciou(boxes1, boxes2):
     alpha = v / (1 - iou + v).clamp(min=1e-7)
 
     # CIoU formula: IoU term + distance penalty + aspect ratio penalty
-    ciou = iou - (center_dist / enclosing_diag) - alpha * v
+    penalty = (center_dist / enclosing_diag) - alpha * v
+    penalty = penalty.clamp(min=-1.0, max=1.0)  # Adjust clipping as necessary
+
+    ciou = iou - penalty
 
     return ciou
 
