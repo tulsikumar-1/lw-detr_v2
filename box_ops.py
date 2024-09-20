@@ -116,7 +116,7 @@ def ciou(boxes1, boxes2):
 
     # CIoU formula: IoU term + distance penalty + aspect ratio penalty
     penalty = (center_dist / enclosing_diag) - alpha * v
-    penalty = penalty.clamp(min=-1.0, max=1.0)  # Adjust clipping as necessary
+    #penalty = penalty.clamp(min=-1.0, max=1.0)  # Adjust clipping as necessary
 
     ciou = iou - penalty
 
