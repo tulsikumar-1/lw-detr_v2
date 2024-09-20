@@ -44,7 +44,7 @@ class HungarianMatcher(nn.Module):
         self.cost_bbox = cost_bbox
         self.cost_giou = cost_giou
         self.cost_ciou = cost_ciou
-        assert cost_class != 0 or cost_bbox != 0 or cost_giou != 0, "all costs cant be 0"
+        assert cost_class != 0 or cost_bbox != 0 or cost_giou != 0 or cost_ciou != 0, "all costs cant be 0"
         self.focal_alpha = focal_alpha
 
     @torch.no_grad()
@@ -114,7 +114,7 @@ class HungarianMatcher(nn.Module):
             raise ValueError("cost_ciou contains non-finite values (NaN or Inf)")
 
         # Final cost matrix
-        C = self.cost_bbox * cost_bbox + self.cost_class * cost_class + self.cost_giou * cost_giou+self.cost_ciou * cost_ciou
+        C = self.cost_bbox * cost_bbox + self.cost_class * cost_class + self.cost_giou * cost_giou+ self.cost_ciou * cost_ciou
         C = C.view(bs, num_queries, -1).cpu()
 
         sizes = [len(v["boxes"]) for v in targets]
