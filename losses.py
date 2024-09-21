@@ -388,7 +388,7 @@ class PostProcess(nn.Module):
         
         boxes_cxcywh = box_ops.box_xyxy_to_cxcywh(boxes)
 
-        results = [{'scores': s, 'labels': l+1, 'boxes': b} for s, l, b in zip(scores, labels, boxes_cxcywh)]
+        results = [{'scores': s, 'labels': l, 'boxes': b} for s, l, b in zip(scores, labels, boxes_cxcywh)]
 
         return results
 
