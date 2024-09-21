@@ -89,9 +89,9 @@ class SetCriterion(nn.Module):
             src_boxes = outputs['pred_boxes'][idx]
             target_boxes = torch.cat([t['boxes'][i] for t, (_, i) in zip(targets, indices)], dim=0)
             
-            iou_targets=torch.diag(box_ops.ciou(
+            iou_targets=torch.diag(box_ops.box_iou(
                     box_ops.box_cxcywh_to_xyxy(src_boxes.detach()),
-                    box_ops.box_cxcywh_to_xyxy(target_boxes))).clamp(min=eps)
+                    box_ops.box_cxcywh_to_xyxy(target_boxes))[0]).clamp(min=eps)
             
             
             pos_ious = iou_targets.clone().detach()

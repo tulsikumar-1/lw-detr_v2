@@ -72,7 +72,8 @@ def calculate_precision_recall_ap(predictions, annotations, iou_threshold=0.5,co
     total_gt_boxes = sum(class_gt_boxes.values())  # Total number of ground truth boxes
 
     for image_id in set([pred['image_id'] for pred in predictions] + [gt['image_id'] for gt in annotations]):
-        preds = [pred for pred in predictions if pred['image_id'] == image_id]
+        preds = [pred for pred in predictions if pred['image_id'] == image_id and pred['category_id']!=0]
+        
         g_truths = [gt for gt in annotations if gt['image_id'] == image_id]
 
         if not preds and not g_truths:
@@ -126,10 +127,10 @@ def calculate_precision_recall_ap(predictions, annotations, iou_threshold=0.5,co
     tp, fp, all_scores = tp[indices], fp[indices], all_scores[indices]
 
     tp_cumsum, fp_cumsum = np.cumsum(tp), np.cumsum(fp)
-    recalls = tp_cumsum / total_gt_boxes if total_gt_boxes > 0 else np.zeros_like(tp_cumsum)
-    precisions = tp_cumsum / (tp_cumsum + fp_cumsum)
+    recalls_t = tp_cumsum / total_gt_boxes if total_gt_boxes > 0 else np.zeros_like(tp_cumsum)
+    precisions_t = tp_cumsum / (tp_cumsum + fp_cumsum)
 
-    precisions, recalls = np.insert(precisions, 0, 1), np.insert(recalls, 0, 0)
+    precisions, recalls = np.insert(precisions_t, 0, 1), np.insert(recalls_t, 0, 0)
     precisions, recalls = np.append(precisions, 0), np.append(recalls, 1)
         # Compute the precision envelope
     precisions = np.flip(np.maximum.accumulate(np.flip(precisions)))
@@ -166,8 +167,8 @@ def calculate_precision_recall_ap(predictions, annotations, iou_threshold=0.5,co
 
             ap_cls = np.trapz(np.interp(x, recalls_cls1, precisions_cls1), x)
 
-            class_precisions[cls] = precisions_cls1
-            class_recalls[cls] = recalls_cls1
+            class_precisions[cls] = precisions_cls
+            class_recalls[cls] = recalls_cls
             class_aps[cls] = ap_cls
 
-    return precisions, recalls, ap, class_precisions, class_recalls, class_aps
+    return precisions_t, recalls_t, ap, class_precisions, class_recalls, class_aps
