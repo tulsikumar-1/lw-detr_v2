@@ -144,13 +144,6 @@ class LWDETR(nn.Module):
             srcs, masks, poss, refpoint_embed_weight, query_feat_weight)
 
         if self.bbox_reparam:
-            outputs_coord_delta = self.bbox_embed(hs)
-            outputs_coord_cxcy = outputs_coord_delta[..., :2] * ref_unsigmoid[..., 2:] + ref_unsigmoid[..., :2]
-            outputs_coord_wh = outputs_coord_delta[..., 2:].exp() * ref_unsigmoid[..., 2:]
-            outputs_coord = torch.concat(
-                [outputs_coord_cxcy, outputs_coord_wh], dim=-1
-            )
-        else:
 
             outputs_coord_delta = self.bbox_embed(hs)
         
@@ -171,6 +164,14 @@ class LWDETR(nn.Module):
         
             # Concatenate final coordinates in x1, y1, x2, y2 format
             outputs_coord = torch.stack([x1, y1, x2, y2], dim=-1)
+            
+        else:
+            outputs_coord_delta = self.bbox_embed(hs)
+            outputs_coord_cxcy = outputs_coord_delta[..., :2] * ref_unsigmoid[..., 2:] + ref_unsigmoid[..., :2]
+            outputs_coord_wh = outputs_coord_delta[..., 2:].exp() * ref_unsigmoid[..., 2:]
+            outputs_coord = torch.concat(
+                [outputs_coord_cxcy, outputs_coord_wh], dim=-1
+            )
 
 
         outputs_class = self.class_embed(hs)

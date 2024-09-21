@@ -90,7 +90,7 @@ class SetCriterion(nn.Module):
             target_boxes = torch.cat([t['boxes'][i] for t, (_, i) in zip(targets, indices)], dim=0)
             
             iou_targets=torch.diag(box_ops.box_iou(
-                    box_ops.box_cxcywh_to_xyxy(src_boxes.detach()),
+                    (src_boxes.detach()),
                     box_ops.box_cxcywh_to_xyxy(target_boxes))[0]).clamp(min=eps)
             
             
@@ -119,7 +119,7 @@ class SetCriterion(nn.Module):
             target_boxes = torch.cat([t['boxes'][i] for t, (_, i) in zip(targets, indices)], dim=0)
 
             iou_targets=torch.diag(box_ops.box_iou(
-                box_ops.box_cxcywh_to_xyxy(src_boxes.detach()),
+                (src_boxes.detach()),
                 box_ops.box_cxcywh_to_xyxy(target_boxes))[0])
             pos_ious = iou_targets.clone().detach()
             # pos_ious_func = pos_ious ** 2
@@ -140,7 +140,7 @@ class SetCriterion(nn.Module):
             target_boxes = torch.cat([t['boxes'][i] for t, (_, i) in zip(targets, indices)], dim=0)
 
             iou_targets=torch.diag(box_ops.box_iou(
-                box_ops.box_cxcywh_to_xyxy(src_boxes.detach()),
+                (src_boxes.detach()),
                 box_ops.box_cxcywh_to_xyxy(target_boxes))[0])
             pos_ious = iou_targets.clone().detach()
 
@@ -202,7 +202,7 @@ class SetCriterion(nn.Module):
         
 
         losses = {}
-        loss_bbox = F.l1_loss(src_boxes, target_boxes, reduction='none')
+        loss_bbox = F.l1_loss(src_boxes,  box_ops.box_cxcywh_to_xyxy(target_boxes), reduction='none')
         losses['loss_bbox'] = loss_bbox.sum() / num_boxes
         
 
@@ -211,14 +211,14 @@ class SetCriterion(nn.Module):
 
         if self.ciou_loss:
             loss_ciou = 1- torch.diag(box_ops.ciou(
-                    box_ops.box_cxcywh_to_xyxy(src_boxes),
+                    src_boxes,
                     box_ops.box_cxcywh_to_xyxy(target_boxes)))
             losses['loss_giou'] = loss_ciou.sum() / num_boxes
            # losses['loss_bbox'] = loss_ciou.sum() / num_boxes
         else:
 
           loss_giou = 1 - torch.diag(box_ops.generalized_box_iou(
-                  box_ops.box_cxcywh_to_xyxy(src_boxes),
+                 (src_boxes),
                   box_ops.box_cxcywh_to_xyxy(target_boxes)))
           losses['loss_giou'] = loss_giou.sum() / num_boxes
             
@@ -378,15 +378,17 @@ class PostProcess(nn.Module):
         scores = topk_values
         topk_boxes = topk_indexes // out_logits.shape[2]
         labels = topk_indexes % out_logits.shape[2]
-        boxes = box_ops.box_cxcywh_to_xyxy(out_bbox)
+        boxes = (out_bbox)
         boxes = torch.gather(boxes, 1, topk_boxes.unsqueeze(-1).repeat(1,1,4))
 
         # and from relative [0, 1] to absolute [0, height] coordinates
         img_h, img_w = target_sizes.unbind(1)
         scale_fct = torch.stack([img_w, img_h, img_w, img_h], dim=1)
         boxes = boxes * scale_fct[:, None, :]
+        
+        boxes_cxcywh = box_ops.box_xyxy_to_cxcywh(boxes)
 
-        results = [{'scores': s, 'labels': l+1, 'boxes': b} for s, l, b in zip(scores, labels, boxes)]
+        results = [{'scores': s, 'labels': l+1, 'boxes': b} for s, l, b in zip(scores, labels, boxes_cxcywh)]
 
         return results
 

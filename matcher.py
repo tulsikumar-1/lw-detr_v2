@@ -83,12 +83,12 @@ class HungarianMatcher(nn.Module):
         
         if (out_bbox>1).any():
           raise ValueError("Predicted boxes contain bigger than one values")
-        #giou = generalized_box_iou(box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
+        #giou = generalized_box_iou((out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
         giou=torch.tensor([0])
         cost_giou = 1-giou
        # print("outbox: ", out_bbox)
        # print("target: ", tgt_bbox)
-        ciou_loss = ciou(box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
+        ciou_loss = ciou((out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
         cost_ciou = 1-ciou_loss
 
         # Compute the classification cost.
@@ -110,7 +110,7 @@ class HungarianMatcher(nn.Module):
 
         # Convert out_bbox to float32 for distance calculation
         out_bbox_float = out_bbox.float()
-        cost_bbox = torch.cdist(out_bbox_float, tgt_bbox.float(), p=1)
+        cost_bbox = torch.cdist(out_bbox_float, box_cxcywh_to_xyxy(tgt_bbox.float()), p=1)
 
 
         if not torch.isfinite(cost_bbox).all():
