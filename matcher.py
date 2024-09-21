@@ -123,7 +123,7 @@ class HungarianMatcher(nn.Module):
             raise ValueError("cost_ciou contains non-finite values (NaN or Inf)")
 
         # Final cost matrix
-        C = self.cost_bbox * cost_bbox + self.cost_class * cost_class + self.cost_ciou * cost_ciou
+        C = self.cost_bbox * cost_bbox + self.cost_class * cost_class + self.cost_ciou * cost_ciou+self.costgiou * cost_giou
         C = C.view(bs, num_queries, -1).cpu()
 
         sizes = [len(v["boxes"]) for v in targets]
