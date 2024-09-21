@@ -158,14 +158,14 @@ class SetCriterion(nn.Module):
 
             target_classes[idx] = target_classes_o
             # Create a mask for valid indices where target_classes_o is not equal to 0 (background)
-            valid_mask = target_classes != 0
+            #valid_mask = target_classes != 0
 
             target_classes_onehot = torch.zeros([src_logits.shape[0], src_logits.shape[1], src_logits.shape[2]],
                                                 dtype=src_logits.dtype, layout=src_logits.layout, device=src_logits.device)
 
             # Update one-hot encoding tensor only for valid positions
             target_classes_onehot.scatter_(2, target_classes.unsqueeze(-1), 1)
-            target_classes_onehot[~valid_mask] = 0  # Ensure background (0) remains zero
+            #target_classes_onehot[~valid_mask] = 0  # Ensure background (0) remains zero
 
             loss_ce = sigmoid_focal_loss(src_logits, target_classes_onehot, num_boxes, alpha=self.focal_alpha, gamma=3) * src_logits.shape[1]
         losses = {'loss_ce': loss_ce}
