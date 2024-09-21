@@ -85,12 +85,13 @@ class SetCriterion(nn.Module):
         if self.ia_bce_loss:
             alpha = self.focal_alpha
             gamma = 3 
+            eps = 1e-8
             src_boxes = outputs['pred_boxes'][idx]
             target_boxes = torch.cat([t['boxes'][i] for t, (_, i) in zip(targets, indices)], dim=0)
             
-            iou_targets=1-torch.diag(box_ops.ciou(
+            iou_targets=torch.diag(box_ops.ciou(
                     box_ops.box_cxcywh_to_xyxy(src_boxes.detach()),
-                    box_ops.box_cxcywh_to_xyxy(target_boxes)))
+                    box_ops.box_cxcywh_to_xyxy(target_boxes))).clamp(min=eps)
             
             
             pos_ious = iou_targets.clone().detach()
@@ -107,7 +108,10 @@ class SetCriterion(nn.Module):
 
             pos_weights[pos_ind] = t
             neg_weights[pos_ind] = 1 - t
-            loss_ce = - pos_weights * prob.log() - neg_weights * (1 - prob).log()
+            #loss_ce = - pos_weights * prob.log() - neg_weights * (1 - prob).log()
+            
+            loss_ce = - pos_weights * (prob.clamp(min=eps, max=1-eps)).log() - neg_weights * ((1 - prob).clamp(min=eps, max=1-eps)).log()
+
             loss_ce = loss_ce.sum() / num_boxes
 
         elif self.use_position_supervised_loss:
