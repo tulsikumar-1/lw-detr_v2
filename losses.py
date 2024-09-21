@@ -91,7 +91,7 @@ class SetCriterion(nn.Module):
             
             iou_targets=torch.diag(box_ops.box_iou(
                     box_ops.box_cxcywh_to_xyxy(src_boxes.detach()),
-                    box_ops.box_cxcywh_to_xyxy(target_boxes))).clamp(min=eps)
+                    box_ops.box_cxcywh_to_xyxy(target_boxes))[0]).clamp(min=eps)
             
             
             pos_ious = iou_targets.clone().detach()
