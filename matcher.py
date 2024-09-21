@@ -76,16 +76,20 @@ class HungarianMatcher(nn.Module):
         tgt_ids = torch.cat([v["labels"] for v in targets])
         tgt_bbox = torch.cat([v["boxes"] for v in targets])
 
-        out_bbox = torch.clamp(out_bbox, min=0)
+        out_bbox = torch.clamp(out_bbox, min=1e-8, max=1)
         # Compute the giou cost betwen boxes
         if (out_bbox < 0).any():
           raise ValueError("Predicted boxes contain negative values")
         
-        giou = generalized_box_iou(box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
-        cost_giou = -giou
-        
+        if (out_bbox>1).any():
+          raise ValueError("Predicted boxes contain bigger than one values")
+        #giou = generalized_box_iou(box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
+        giou=torch.tensor([0])
+        cost_giou = 1-giou
+       # print("outbox: ", out_bbox)
+       # print("target: ", tgt_bbox)
         ciou_loss = ciou(box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
-        cost_ciou = -ciou_loss
+        cost_ciou = 1-ciou_loss
 
         # Compute the classification cost.
         alpha = self.focal_alpha
@@ -102,7 +106,12 @@ class HungarianMatcher(nn.Module):
 
 
         # Compute the L1 cost between boxes
-        cost_bbox = torch.cdist(out_bbox, tgt_bbox, p=1)
+        #cost_bbox = torch.cdist(out_bbox, tgt_bbox, p=1)
+
+        # Convert out_bbox to float32 for distance calculation
+        out_bbox_float = out_bbox.float()
+        cost_bbox = torch.cdist(out_bbox_float, tgt_bbox.float(), p=1)
+
 
         if not torch.isfinite(cost_bbox).all():
             raise ValueError("cost_bbox contains non-finite values (NaN or Inf)")
@@ -114,7 +123,7 @@ class HungarianMatcher(nn.Module):
             raise ValueError("cost_ciou contains non-finite values (NaN or Inf)")
 
         # Final cost matrix
-        C = self.cost_bbox * cost_bbox + self.cost_class * cost_class + self.cost_giou * cost_giou+ self.cost_ciou * cost_ciou
+        C = self.cost_bbox * cost_bbox + self.cost_class * cost_class + self.cost_ciou * cost_ciou
         C = C.view(bs, num_queries, -1).cpu()
 
         sizes = [len(v["boxes"]) for v in targets]

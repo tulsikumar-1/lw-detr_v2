@@ -69,7 +69,7 @@ class ConvertCoco(object):
         classes = [obj["category_id"] for obj in anno]
         classes = torch.tensor(classes, dtype=torch.int64)
         # Adjust class labels from 1-5 to 0-4
-       # classes -= 1
+        classes -= 1
 
         keep = (boxes[:, 3] > boxes[:, 1]) & (boxes[:, 2] > boxes[:, 0])
         boxes = boxes[keep]

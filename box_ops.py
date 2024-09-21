@@ -25,11 +25,32 @@ import torch
 from torchvision.ops.boxes import box_area
 
 
-def box_cxcywh_to_xyxy(x,eps=1e-6):
+
+def box_cxcywh_to_xyxy(x, eps=1e-10, max_val=1.0):
+    # Unbind the center coordinates, width, and height
     x_c, y_c, w, h = x.unbind(-1)
-    b = [(x_c - 0.5 * w.clamp(min=eps)), (y_c - 0.5 * h.clamp(min=eps)),
-         (x_c + 0.5 * w.clamp(min=eps)), (y_c + 0.5 * h.clamp(min=eps))]
-    return torch.stack(b, dim=-1)
+    
+    # Clamp width and height to avoid negative or zero values
+    w = w.clamp(min=eps)
+    h = h.clamp(min=eps)
+    x_c = x_c.clamp(min=eps)
+    y_c = y_c.clamp(min=eps)
+    
+    # Compute xmin, ymin, xmax, ymax
+    x_min = (x_c - 0.5 * w).clamp(min=eps, max=max_val)
+    y_min = (y_c - 0.5 * h).clamp(min=eps, max=max_val)
+    x_max = (x_c + 0.5 * w).clamp(min=eps, max=max_val)
+    y_max = (y_c + 0.5 * h).clamp(min=eps, max=max_val)
+    
+    # Ensure xmin <= xmax and ymin <= ymax
+    x_min = torch.min(x_min, x_max)
+    y_min = torch.min(y_min, y_max)
+    x_max = torch.max(x_min + eps, x_max)  # Ensure xmax >= xmin
+    y_max = torch.max(y_min + eps, y_max)  # Ensure ymax >= ymin
+    
+    # Return the box in (xmin, ymin, xmax, ymax) format
+    return torch.stack([x_min, y_min, x_max, y_max], dim=-1)
+
 
 
 def box_xyxy_to_cxcywh(x):
@@ -84,43 +105,34 @@ def generalized_box_iou(boxes1, boxes2):
 
 
 def ciou(boxes1, boxes2):
-    # Ensure boxes are in the correct format
-    assert (boxes1[:, 2:] >= boxes1[:, :2]).all()
-    assert (boxes2[:, 2:] >= boxes2[:, :2]).all()
-
-    # Compute IoU and union area
+    # Ensure boxes are in the correct format (x_min, y_min, x_max, y_max)
+    assert (boxes1[:, 2:] >= boxes1[:, :2]).all(), f"Invalid boxes1: {boxes1}"
+    assert (boxes2[:, 2:] >= boxes2[:, :2]).all(), f"Invalid boxes2: {boxes2}"
+    
+    # Continue with your IoU and CIoU calculations
     iou, union = box_iou(boxes1, boxes2)
     iou = iou.clamp(min=0.0, max=1.0)  # Ensure IoU stays between 0 and 1
 
-    # Compute centers of both boxes
     center1 = (boxes1[:, None, :2] + boxes1[:, None, 2:]) / 2  # [N, M, 2]
     center2 = (boxes2[:, :2] + boxes2[:, 2:]) / 2  # [M, 2]
 
-    # Compute the Euclidean distance between box centers (L2 loss)
     center_dist = ((center1 - center2) ** 2).sum(dim=-1)  # [N, M]
-
-    # Compute the diagonal distance of the smallest enclosing box
     lt = torch.min(boxes1[:, None, :2], boxes2[:, :2])  # [N, M, 2]
     rb = torch.max(boxes1[:, None, 2:], boxes2[:, 2:])  # [N, M, 2]
     enclosing_diag = ((rb - lt) ** 2).sum(dim=-1).clamp(min=1e-7)  # [N, M]
 
-    # Aspect ratio consistency term
     wh1 = boxes1[:, None, 2:] - boxes1[:, None, :2]  # width and height of boxes1
     wh2 = boxes2[:, 2:] - boxes2[:, :2]  # width and height of boxes2
 
     v = (4 / (torch.pi ** 2)) * ((torch.atan(wh1[:, :, 0] / wh1[:, :, 1].clamp(min=1e-7)) -
                                   torch.atan(wh2[:, 0] / wh2[:, 1].clamp(min=1e-7))) ** 2)  # Aspect ratio term
 
-    # Trade-off parameter to balance IoU and aspect ratio
     alpha = v / (1 - iou + v).clamp(min=1e-7)
-
-    # CIoU formula: IoU term + distance penalty + aspect ratio penalty
     penalty = (center_dist / enclosing_diag) - alpha * v
-    #penalty = penalty.clamp(min=-1.0, max=1.0)  # Adjust clipping as necessary
-
     ciou = iou - penalty
 
-    return ciou
+    return ciou  # Prevent NaN by clamping CIoU
+
 
 
 
