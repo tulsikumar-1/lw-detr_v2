@@ -89,9 +89,9 @@ class SetCriterion(nn.Module):
             src_boxes = outputs['pred_boxes'][idx]
             target_boxes = torch.cat([t['boxes'][i] for t, (_, i) in zip(targets, indices)], dim=0)
             
-            iou_targets=torch.diag(box_ops.box_iou(
-                    (src_boxes.detach()),
-                    box_ops.box_cxcywh_to_xyxy(target_boxes))[0]).clamp(min=eps)
+            iou_targets=torch.diag(box_ops.ciou(
+                    box_ops.box_cxcywh_to_xyxy(src_boxes.detach()),
+                    box_ops.box_cxcywh_to_xyxy(target_boxes))).clamp(min=eps)
             
             
             pos_ious = iou_targets.clone().detach()
@@ -119,7 +119,7 @@ class SetCriterion(nn.Module):
             target_boxes = torch.cat([t['boxes'][i] for t, (_, i) in zip(targets, indices)], dim=0)
 
             iou_targets=torch.diag(box_ops.box_iou(
-                (src_boxes.detach()),
+                box_ops.box_cxcywh_to_xyxy(src_boxes.detach()),
                 box_ops.box_cxcywh_to_xyxy(target_boxes))[0])
             pos_ious = iou_targets.clone().detach()
             # pos_ious_func = pos_ious ** 2
@@ -140,7 +140,7 @@ class SetCriterion(nn.Module):
             target_boxes = torch.cat([t['boxes'][i] for t, (_, i) in zip(targets, indices)], dim=0)
 
             iou_targets=torch.diag(box_ops.box_iou(
-                (src_boxes.detach()),
+                box_ops.box_cxcywh_to_xyxy(src_boxes.detach()),
                 box_ops.box_cxcywh_to_xyxy(target_boxes))[0])
             pos_ious = iou_targets.clone().detach()
 
@@ -158,14 +158,14 @@ class SetCriterion(nn.Module):
 
             target_classes[idx] = target_classes_o
             # Create a mask for valid indices where target_classes_o is not equal to 0 (background)
-            valid_mask = target_classes != 0
+            #valid_mask = target_classes != 0
 
             target_classes_onehot = torch.zeros([src_logits.shape[0], src_logits.shape[1], src_logits.shape[2]],
                                                 dtype=src_logits.dtype, layout=src_logits.layout, device=src_logits.device)
 
             # Update one-hot encoding tensor only for valid positions
             target_classes_onehot.scatter_(2, target_classes.unsqueeze(-1), 1)
-            target_classes_onehot[~valid_mask] = 0  # Ensure background (0) remains zero
+            #target_classes_onehot[~valid_mask] = 0  # Ensure background (0) remains zero
 
             loss_ce = sigmoid_focal_loss(src_logits, target_classes_onehot, num_boxes, alpha=self.focal_alpha, gamma=2) * src_logits.shape[1]
         losses = {'loss_ce': loss_ce}
@@ -202,7 +202,7 @@ class SetCriterion(nn.Module):
         
 
         losses = {}
-        loss_bbox = F.l1_loss(src_boxes,  box_ops.box_cxcywh_to_xyxy(target_boxes), reduction='none')
+        loss_bbox = F.l1_loss(src_boxes, target_boxes, reduction='none')
         losses['loss_bbox'] = loss_bbox.sum() / num_boxes
         
 
@@ -211,14 +211,14 @@ class SetCriterion(nn.Module):
 
         if self.ciou_loss:
             loss_ciou = 1- torch.diag(box_ops.ciou(
-                    src_boxes,
+                    box_ops.box_cxcywh_to_xyxy(src_boxes),
                     box_ops.box_cxcywh_to_xyxy(target_boxes)))
             losses['loss_giou'] = loss_ciou.sum() / num_boxes
            # losses['loss_bbox'] = loss_ciou.sum() / num_boxes
         else:
 
           loss_giou = 1 - torch.diag(box_ops.generalized_box_iou(
-                 (src_boxes),
+                  box_ops.box_cxcywh_to_xyxy(src_boxes),
                   box_ops.box_cxcywh_to_xyxy(target_boxes)))
           losses['loss_giou'] = loss_giou.sum() / num_boxes
             
@@ -378,17 +378,15 @@ class PostProcess(nn.Module):
         scores = topk_values
         topk_boxes = topk_indexes // out_logits.shape[2]
         labels = topk_indexes % out_logits.shape[2]
-        boxes = (out_bbox)
+        boxes = box_ops.box_cxcywh_to_xyxy(out_bbox)
         boxes = torch.gather(boxes, 1, topk_boxes.unsqueeze(-1).repeat(1,1,4))
 
         # and from relative [0, 1] to absolute [0, height] coordinates
         img_h, img_w = target_sizes.unbind(1)
         scale_fct = torch.stack([img_w, img_h, img_w, img_h], dim=1)
         boxes = boxes * scale_fct[:, None, :]
-        
-        boxes_cxcywh = box_ops.box_xyxy_to_cxcywh(boxes)
 
-        results = [{'scores': s, 'labels': l, 'boxes': b} for s, l, b in zip(scores, labels, boxes_cxcywh)]
+        results = [{'scores': s, 'labels': l, 'boxes': b} for s, l, b in zip(scores, labels, boxes)]
 
         return results
 
