@@ -89,7 +89,7 @@ class HungarianMatcher(nn.Module):
 
         # Compute the classification cost.
         alpha = self.focal_alpha
-        gamma = 3.0
+        gamma = 2.0
         
 
                 # Safe computation of focal loss
