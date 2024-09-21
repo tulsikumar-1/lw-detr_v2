@@ -83,8 +83,8 @@ class HungarianMatcher(nn.Module):
         
         if (out_bbox>1).any():
           raise ValueError("Predicted boxes contain bigger than one values")
-        #giou = generalized_box_iou(box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
-        giou=torch.tensor([0])
+        giou = generalized_box_iou(box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
+        #giou=torch.tensor([0])
         cost_giou = 1-giou
        # print("outbox: ", out_bbox)
        # print("target: ", tgt_bbox)
