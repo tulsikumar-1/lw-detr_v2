@@ -84,13 +84,13 @@ class SetCriterion(nn.Module):
 
         if self.ia_bce_loss:
             alpha = self.focal_alpha
-            gamma = 2 
+            gamma = 3 
             src_boxes = outputs['pred_boxes'][idx]
             target_boxes = torch.cat([t['boxes'][i] for t, (_, i) in zip(targets, indices)], dim=0)
             
-            iou_targets=torch.diag(box_ops.box_iou(
+            iou_targets=1-torch.diag(box_ops.ciou(
                     box_ops.box_cxcywh_to_xyxy(src_boxes.detach()),
-                    box_ops.box_cxcywh_to_xyxy(target_boxes))[0])
+                    box_ops.box_cxcywh_to_xyxy(target_boxes)))
             
             
             pos_ious = iou_targets.clone().detach()
@@ -198,8 +198,8 @@ class SetCriterion(nn.Module):
         
 
         losses = {}
-        loss_bbox = F.l1_loss(src_boxes, target_boxes, reduction='none')
-        losses['loss_bbox'] = loss_bbox.sum() / num_boxes
+        #loss_bbox = F.l1_loss(src_boxes, target_boxes, reduction='none')
+        #losses['loss_bbox'] = loss_bbox.sum() / num_boxes
         
 
         
@@ -210,6 +210,7 @@ class SetCriterion(nn.Module):
                     box_ops.box_cxcywh_to_xyxy(src_boxes),
                     box_ops.box_cxcywh_to_xyxy(target_boxes)))
             losses['loss_giou'] = loss_ciou.sum() / num_boxes
+            losses['loss_bbox'] = loss_ciou.sum() / num_boxes
         else:
 
           loss_giou = 1 - torch.diag(box_ops.generalized_box_iou(
@@ -336,7 +337,7 @@ def sigmoid_varifocal_loss(inputs, targets, num_boxes, alpha: float = 0.25, gamm
     return loss.mean(1).sum() / num_boxes
 
 
-def position_supervised_loss(inputs, targets, num_boxes, alpha: float = 0.25, gamma: float = 2):
+def position_supervised_loss(inputs, targets, num_boxes, alpha: float = 0.25, gamma: float = 3):
     prob = inputs.sigmoid()
     ce_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction="none")
     loss = ce_loss * (torch.abs(targets - prob) ** gamma)
