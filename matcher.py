@@ -31,7 +31,7 @@ class HungarianMatcher(nn.Module):
     while the others are un-matched (and thus treated as non-objects).
     """
 
-    def __init__(self, cost_class: float = 0, cost_bbox: float = 0, cost_giou: float = 0,cost_ciou: float = 0, focal_alpha: float = 0.25, use_pos_only: bool = False,
+    def __init__(self, cost_class: float = 0, cost_bbox: float = 0, cost_giou: float = 0,cost_ciou: float = 0, focal_alpha: float = 0.25,gamma: float = 2.0, use_pos_only: bool = False,
                  use_position_modulated_cost: bool = False):
         """Creates the matcher
         Params:
@@ -46,6 +46,7 @@ class HungarianMatcher(nn.Module):
         self.cost_ciou = cost_ciou
         assert cost_class != 0 or cost_bbox != 0 or cost_giou != 0 or cost_ciou != 0, "all costs cant be 0"
         self.focal_alpha = focal_alpha
+        self.gamma = gamma
 
     @torch.no_grad()
     def forward(self, outputs, targets, group_detr=1):
@@ -93,7 +94,7 @@ class HungarianMatcher(nn.Module):
 
         # Compute the classification cost.
         alpha = self.focal_alpha
-        gamma = 2.0
+        gamma = self.gamma
         
 
                 # Safe computation of focal loss

@@ -42,6 +42,7 @@ class SetCriterion(nn.Module):
                  matcher,
                  weight_dict,
                  focal_alpha,
+                 gamma,
                  losses,
                  group_detr=1,
                  sum_group_losses=False,
@@ -64,6 +65,7 @@ class SetCriterion(nn.Module):
         self.weight_dict = weight_dict
         self.losses = losses
         self.focal_alpha = focal_alpha
+        self.gamma= gamma
         self.group_detr = group_detr
         self.sum_group_losses = sum_group_losses
         self.use_varifocal_loss = use_varifocal_loss
@@ -84,7 +86,7 @@ class SetCriterion(nn.Module):
 
         if self.ia_bce_loss:
             alpha = self.focal_alpha
-            gamma = 2 
+            gamma = self.gamma
             eps = 1e-8
             src_boxes = outputs['pred_boxes'][idx]
             target_boxes = torch.cat([t['boxes'][i] for t, (_, i) in zip(targets, indices)], dim=0)
@@ -167,7 +169,7 @@ class SetCriterion(nn.Module):
             target_classes_onehot.scatter_(2, target_classes.unsqueeze(-1), 1)
             #target_classes_onehot[~valid_mask] = 0  # Ensure background (0) remains zero
 
-            loss_ce = sigmoid_focal_loss(src_logits, target_classes_onehot, num_boxes, alpha=self.focal_alpha, gamma=2) * src_logits.shape[1]
+            loss_ce = sigmoid_focal_loss(src_logits, target_classes_onehot, num_boxes, alpha=self.focal_alpha, gamma=self.gamma) * src_logits.shape[1]
         losses = {'loss_ce': loss_ce}
 
         if log:
