@@ -119,15 +119,15 @@ def ciou(boxes1, boxes2):
     center_dist = ((center1 - center2) ** 2).sum(dim=-1)  # [N, M]
     lt = torch.min(boxes1[:, None, :2], boxes2[:, :2])  # [N, M, 2]
     rb = torch.max(boxes1[:, None, 2:], boxes2[:, 2:])  # [N, M, 2]
-    enclosing_diag = ((rb - lt) ** 2).sum(dim=-1).clamp(min=1e-7)  # [N, M]
+    enclosing_diag = ((rb - lt) ** 2).sum(dim=-1).clamp(min=1e-10)  # [N, M]
 
     wh1 = boxes1[:, None, 2:] - boxes1[:, None, :2]  # width and height of boxes1
     wh2 = boxes2[:, 2:] - boxes2[:, :2]  # width and height of boxes2
 
-    v = (4 / (torch.pi ** 2)) * ((torch.atan(wh1[:, :, 0] / wh1[:, :, 1].clamp(min=1e-7)) -
-                                  torch.atan(wh2[:, 0] / wh2[:, 1].clamp(min=1e-7))) ** 2)  # Aspect ratio term
+    v = (4 / (torch.pi ** 2)) * ((torch.atan(wh1[:, :, 0] / wh1[:, :, 1].clamp(min=1e-10)) -
+                                  torch.atan(wh2[:, 0] / wh2[:, 1].clamp(min=1e-10))) ** 2)  # Aspect ratio term
 
-    alpha = v / (1 - iou + v).clamp(min=1e-7)
+    alpha = v / (1 - iou + v).clamp(min=1e-10)
     penalty = (center_dist / enclosing_diag) - alpha * v
     ciou = iou - penalty
 
