@@ -86,11 +86,11 @@ class HungarianMatcher(nn.Module):
           raise ValueError("Predicted boxes contain bigger than one values")
         giou = generalized_box_iou(box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
         #giou=torch.tensor([0])
-        cost_giou = 1-giou
+        cost_giou = -giou
        # print("outbox: ", out_bbox)
        # print("target: ", tgt_bbox)
         ciou_loss = ciou(box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
-        cost_ciou = 1-ciou_loss
+        cost_ciou = -ciou_loss
 
         # Compute the classification cost.
         alpha = self.focal_alpha
