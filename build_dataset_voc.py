@@ -139,17 +139,17 @@ def make_coco_transforms_square_div_64(image_set):
     ])
 
 
-    scales = [128,192,256, 320, 384, 448, 512]
+    scales = [320, 384, 448, 512,576,640, 704]
 
     if image_set == 'train':
         return T.Compose([
             T.RandomHorizontalFlip(),
             T.RandomSelect(
-                T.SquareResize(scales),
+                T.SquareResize(scales),  # Resize to one of the scales
                 T.Compose([
-                    T.RandomResize([200, 300, 400]),
-                    T.RandomSizeCrop(184, 300),
-                    T.SquareResize(scales),
+                    T.RandomResize([int(scale * 0.625) for scale in scales]),  # Dynamically resize (e.g., 200, 300, etc.)
+                    T.RandomSizeCrop(min(scales), max(scales)),  # Crop between the min and max scales
+                    T.SquareResize(scales),  # Resize back to one of the scales after cropping
                 ]),
             ),
             normalize,
