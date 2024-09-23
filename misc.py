@@ -502,7 +502,7 @@ def count_parameters(model):
 
 
 def convert_predictions_to_coco_format(predictions, image_id):
-    coco_results = {}
+    coco_results = []
 
     for idx in range(len(predictions['scores'])):
         score = predictions['scores'][idx].item()
@@ -519,7 +519,7 @@ def convert_predictions_to_coco_format(predictions, image_id):
         
         
 
-        coco_results[image_id].append({
+        coco_results.append({
             'image_id': image_id,
             'category_id': label,
             'bbox': [round(x_min,3), round(y_min,3), round(width,3), round(height,3)],
