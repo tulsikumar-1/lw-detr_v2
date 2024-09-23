@@ -147,8 +147,8 @@ def make_coco_transforms_square_div_64(image_set):
             T.RandomSelect(
                 T.SquareResize(scales),
                 T.Compose([
-                    T.RandomResize([600, 640, 704]),  # Higher resize values for larger augmentation
-                    T.RandomSizeCrop(512, 704),       # Crop size suited for images up to 640x640
+                    T.RandomResize([300,400, 500]),  # Higher resize values for larger augmentation
+                    T.RandomSizeCrop(200, 450),       # Crop size suited for images up to 640x640
                     T.SquareResize(scales),
                 ]),
             ),
