@@ -118,7 +118,7 @@ class HungarianMatcher(nn.Module):
             raise ValueError("cost_bbox contains non-finite values (NaN or Inf)")
         if not torch.isfinite(cost_class).all():
             raise ValueError("cost_class contains non-finite values (NaN or Inf)")
-       if not torch.isfinite(cost_giou).all():
+        if not torch.isfinite(cost_giou).all():
             raise ValueError("cost_giou contains non-finite values (NaN or Inf)")
       #  if not torch.isfinite(cost_ciou).all():
        #     raise ValueError("cost_ciou contains non-finite values (NaN or Inf)")
