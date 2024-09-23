@@ -506,28 +506,26 @@ def convert_predictions_to_coco_format(predictions, image_id):
 
     for idx in range(len(predictions['scores'])):
         score = predictions['scores'][idx].item()
-        label = predictions['labels'][idx].item()  # Class ID
+        label = predictions['labels'][idx].item()
         bbox = predictions['boxes'][idx].tolist()
 
+
         # Convert bbox from [x1, y1, x2, y2] to [x_min, y_min, width, height]
+
+       # bbox=[x /640 for x in bbox]
         x_min, y_min, x_max, y_max = bbox
         width = x_max - x_min
         height = y_max - y_min
         
-        # Prepare the result dictionary for this prediction
-        prediction = {
+        
+
+        coco_results[image_id].append({
             'image_id': image_id,
             'category_id': label,
-            'bbox': [x_min, y_min, width, height],
-            'score': score
-        }
+            'bbox': [round(x_min,3), round(y_min,3), round(width,3), round(height,3)],
+            'score': round(score,4)
 
-        # Store the prediction in coco_results with image_id as the key
-        if image_id not in coco_results:
-            coco_results[image_id] = []  # Initialize an empty list for this image_id
-        
-        # Append the prediction to the list for this image_id
-        coco_results[image_id].append(prediction)
+        })
 
     return coco_results
 
