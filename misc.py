@@ -525,7 +525,7 @@ def convert_predictions_to_coco_format(predictions, image_id):
             'bbox': [round(x_min,3), round(y_min,3), round(width,3), round(height,3)],
             'score': round(score,4)
 
-        })
+        }) 
 
     return coco_results
 
