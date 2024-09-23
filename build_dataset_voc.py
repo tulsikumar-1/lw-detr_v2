@@ -143,15 +143,14 @@ def make_coco_transforms_square_div_64(image_set):
 
     if image_set == 'train':
         return T.Compose([
-            T.RandomHorizontalFlip(),
-            T.RandomSelect(
+            #T.RandomHorizontalFlip(),
+            #T.RandomSelect(
                 T.SquareResize(scales),
-                T.Compose([
-                    T.RandomResize([400, 500, 600]),
-                    T.RandomSizeCrop(384, 600),
-                    T.SquareResize(scales),
-                ]),
-            ),
+             ##      T.RandomResize([400, 500, 600]),
+               #     T.RandomSizeCrop(384, 600),
+                #    T.SquareResize(scales),
+                #]),
+           # ),
             normalize,
         ])
 
