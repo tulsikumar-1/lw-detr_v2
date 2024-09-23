@@ -71,7 +71,7 @@ def calculate_precision_recall_ap(predictions, annotations, iou_threshold=0.5,co
 
     total_gt_boxes = sum(class_gt_boxes.values())  # Total number of ground truth boxes
 
-    for image_id in set([pred['image_id'] for pred in predictions] + [gt['image_id'] for gt in annotations]):
+    for image_id in [gt['image_id'] for gt in annotations]:
         preds = [pred for pred in predictions[image_id] if pred['category_id']!=0]
         
         g_truths = [gt for gt in annotations if gt['image_id'] == image_id]
