@@ -81,7 +81,7 @@ def calculate_precision_recall_ap(predictions, annotations, iou_threshold=0.5,co
 
         gt_boxes, _, gt_labels = extract_coco_data(g_truths)
         preds=apply_confidence_threshold(preds,conf_threshold)
-        preds_nms = apply_nms(preds, 0.2)
+        preds_nms = apply_nms(preds, 0.5)
         preds_nms=preds
         pred_boxes, pred_scores, pred_labels = extract_coco_data(preds_nms)
 
