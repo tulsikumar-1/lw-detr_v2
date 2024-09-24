@@ -84,13 +84,16 @@ class HungarianMatcher(nn.Module):
         
         if (out_bbox>1).any():
           raise ValueError("Predicted boxes contain bigger than one values")
-        giou = generalized_box_iou(box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
-        #giou=torch.tensor([0])
-        cost_giou = -giou
-       # print("outbox: ", out_bbox)
-       # print("target: ", tgt_bbox)
-        #ciou_loss = ciou(box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
-        #cost_ciou = -ciou_loss
+          
+        if self.cost_giou:
+            giou = generalized_box_iou(box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
+            #giou=torch.tensor([0])
+            cost_giou = -giou
+           # print("outbox: ", out_bbox)
+           # print("target: ", tgt_bbox)
+        if self.cost_ciou:
+            ciou_loss = ciou(box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
+            cost_ciou = -ciou_loss
 
         # Compute the classification cost.
         alpha = self.focal_alpha
@@ -120,11 +123,15 @@ class HungarianMatcher(nn.Module):
             raise ValueError("cost_class contains non-finite values (NaN or Inf)")
         if not torch.isfinite(cost_giou).all():
             raise ValueError("cost_giou contains non-finite values (NaN or Inf)")
-      #  if not torch.isfinite(cost_ciou).all():
-       #     raise ValueError("cost_ciou contains non-finite values (NaN or Inf)")
+        if not torch.isfinite(cost_ciou).all():
+            raise ValueError("cost_ciou contains non-finite values (NaN or Inf)")
 
         # Final cost matrix
-        C = self.cost_bbox * cost_bbox + self.cost_class * cost_class + self.cost_giou * cost_giou
+        if cost_giou:
+            C = self.cost_bbox * cost_bbox + self.cost_class * cost_class + self.cost_giou * cost_giou
+        if cost_ciou:
+            C = self.cost_bbox * cost_bbox + self.cost_class * cost_class + self.cost_ciou * cost_ciou
+            
         C = C.view(bs, num_queries, -1).cpu()
 
         sizes = [len(v["boxes"]) for v in targets]
