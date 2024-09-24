@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Aug  5 13:27:41 2024
-
-@author: Administrator
-"""
-
 # ------------------------------------------------------------------------
 # LW-DETR
 # Copyright (c) 2024 Baidu. All Rights Reserved.
@@ -17,7 +10,9 @@ Created on Mon Aug  5 13:27:41 2024
 """
 Projector
 """
-
+import math
+import random
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
