@@ -68,7 +68,7 @@ class Backbone(nn.Module):
                 use_act_checkpoint=True,  # use checkpoint to save memory
                 use_abs_pos=True,
                 out_feature_indexes=out_feature_indexes,
-                use_cae=False)
+                use_cae=True)
  
 
 
