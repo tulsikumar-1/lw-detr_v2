@@ -89,11 +89,15 @@ class HungarianMatcher(nn.Module):
             giou = generalized_box_iou(box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
             #giou=torch.tensor([0])
             cost_giou = -giou
+            if not torch.isfinite(cost_giou).all():
+                raise ValueError("cost_giou contains non-finite values (NaN or Inf)")
            # print("outbox: ", out_bbox)
            # print("target: ", tgt_bbox)
         if self.cost_ciou:
             ciou_loss = ciou(box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
             cost_ciou = -ciou_loss
+            if not torch.isfinite(cost_ciou).all():
+                raise ValueError("cost_ciou contains non-finite values (NaN or Inf)")
 
         # Compute the classification cost.
         alpha = self.focal_alpha
@@ -121,10 +125,8 @@ class HungarianMatcher(nn.Module):
             raise ValueError("cost_bbox contains non-finite values (NaN or Inf)")
         if not torch.isfinite(cost_class).all():
             raise ValueError("cost_class contains non-finite values (NaN or Inf)")
-        if not torch.isfinite(cost_giou).all():
-            raise ValueError("cost_giou contains non-finite values (NaN or Inf)")
-        if not torch.isfinite(cost_ciou).all():
-            raise ValueError("cost_ciou contains non-finite values (NaN or Inf)")
+
+
 
         # Final cost matrix
         if cost_giou:
