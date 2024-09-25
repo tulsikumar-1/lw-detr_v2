@@ -12,7 +12,7 @@ from torch import nn
 
 from  misc import NestedTensor
 from position_encoding import build_position_encoding
-from Backbone import Backbone
+from Backbone import Backbone,get_named_param_lr_pairs
 
 
 class Joiner(nn.Sequential):
@@ -66,3 +66,37 @@ def build_backbone(vit_encoder_num_layers: int=6 ,
 
     model = Joiner(backbone, position_embedding)
     return model
+
+
+def get_param_dict( lr,vit_encoder_num_layers,lr_encoder,lr_vit_layer_decay,weight_decay,lr_component_decay, model_without_ddp: nn.Module):
+    assert isinstance(model_without_ddp.backbone, Joiner)
+    backbone = model_without_ddp.backbone[0]
+    backbone_named_param_lr_pairs = backbone.get_named_param_lr_pairs( vit_encoder_num_layers,lr_encoder,lr_vit_layer_decay,weight_decay,lr_component_decay, prefix= "backbone.0")
+    backbone_param_lr_pairs = [param_dict for _, param_dict in backbone_named_param_lr_pairs.items()]
+
+    decoder_key = 'transformer.decoder'
+    decoder_params = [
+        p
+        for n, p in model_without_ddp.named_parameters() if decoder_key in n and p.requires_grad
+    ]
+
+    decoder_param_lr_pairs = [
+        {"params": param, "lr": lr * lr_component_decay} 
+        for param in decoder_params
+    ]
+
+    other_params = [
+        p
+        for n, p in model_without_ddp.named_parameters() if (
+            n not in backbone_named_param_lr_pairs and decoder_key not in n and p.requires_grad)
+    ]
+    other_param_dicts = [
+        {"params": param, "lr": lr} 
+        for param in other_params
+    ]
+    
+    final_param_dicts = (
+        other_param_dicts + backbone_param_lr_pairs + decoder_param_lr_pairs
+    )
+
+    return final_param_dicts

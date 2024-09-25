@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Aug  5 13:23:21 2024
-
-@author: Administrator
-"""
 # ------------------------------------------------------------------------
 # LW-DETR
 # Copyright (c) 2024 Baidu. All Rights Reserved.
@@ -16,8 +10,9 @@ Created on Mon Aug  5 13:23:21 2024
 """
 ViT encoder
 """
-from functools import partial
 import math
+import random
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -25,12 +20,8 @@ import torch.nn.functional as F
 from fairscale.nn.checkpoint import checkpoint_wrapper
 from timm.models.layers import DropPath, Mlp, trunc_normal_
 
+from box_ops import box_cxcywh_to_xyxy
 
-def box_cxcywh_to_xyxy(x):
-    x_c, y_c, w, h = x.unbind(-1)
-    b = [(x_c - 0.5 * w.clamp(min=0.0)), (y_c - 0.5 * h.clamp(min=0.0)),
-         (x_c + 0.5 * w.clamp(min=0.0)), (y_c + 0.5 * h.clamp(min=0.0))]
-    return torch.stack(b, dim=-1)
 
 def get_abs_pos(abs_pos, has_cls_token, hw):
     """
@@ -161,8 +152,8 @@ class Block(nn.Module):
         drop_path=0.0,
         norm_layer=nn.LayerNorm,
         act_layer=nn.GELU,
-        window=True,
-        use_cae=True,
+        window=False,
+        use_cae=False,
     ):
         """
         Args:
@@ -243,21 +234,21 @@ class ViT(nn.Module):
         img_size=1024,
         patch_size=16,
         in_chans=3,
-        embed_dim=192,
+        embed_dim=768,
         depth=12,
         num_heads=12,
         mlp_ratio=4.0,
         qkv_bias=True,
-        drop_path_rate=0.1,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6),
+        drop_path_rate=0.0,
+        norm_layer=nn.LayerNorm,
         act_layer=nn.GELU,
         use_abs_pos=True,
-        window_block_indexes=[],
+        window_block_indexes=(),
         use_act_checkpoint=False,
         pretrain_img_size=224,
         pretrain_use_cls_token=True,
-        out_feature_indexes:list=[-1],
-        use_cae=True,
+        out_feature_indexes:list=None,
+        use_cae=False,
     ):
         """
         Args:
@@ -281,7 +272,7 @@ class ViT(nn.Module):
             pretrain_img_size (int): input image size for pretraining models.
             pretrain_use_cls_token (bool): If True, pretrainig models use class token.
         """
-        super(ViT,self).__init__()
+        super().__init__()
         self.pretrain_use_cls_token = pretrain_use_cls_token
 
         self.patch_embed = PatchEmbed(
