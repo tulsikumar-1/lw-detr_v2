@@ -99,7 +99,7 @@ def generalized_box_iou(boxes1, boxes2):
     wh = (rb - lt).clamp(min=0)  # [N,M,2]
     area = wh[:, :, 0] * wh[:, :, 1]
     area = area.clamp(min=1e-10)
-    return iou - (area - union) / area
+    return( iou - (area - union) / area).clamp(min=-1,max=1)
 
 
 
@@ -131,7 +131,7 @@ def ciou(boxes1, boxes2):
     penalty = (center_dist / enclosing_diag) - alpha * v
     ciou = iou - penalty
 
-    return ciou  # Prevent NaN by clamping CIoU
+    return ciou.clamp(min=-1,max=1)  # Prevent NaN by clamping CIoU
 
 
 
