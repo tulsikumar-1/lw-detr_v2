@@ -127,7 +127,7 @@ class Transformer(nn.Module):
 
     def __init__(self, d_model=512, sa_nhead=8, ca_nhead=8, num_queries=300,
                  num_decoder_layers=6, dim_feedforward=2048, dropout=0.0,
-                 activation="relu", normalize_before=False,
+                 activation="gelu", normalize_before=False,
                  return_intermediate_dec=False, group_detr=1, 
                  two_stage=False,
                  num_feature_levels=4, dec_n_points=4,
@@ -292,10 +292,10 @@ class TransformerDecoder(nn.Module):
     def __init__(self,
                  decoder_layer,
                  num_layers,
-                 norm=None, 
-                 return_intermediate=False,
+                 norm=True, 
+                 return_intermediate=True,
                  d_model=256,
-                 lite_refpoint_refine=False,
+                 lite_refpoint_refine=True,
                  bbox_reparam=False):
         super().__init__()
         self.layers = _get_clones(decoder_layer, num_layers)
