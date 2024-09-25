@@ -12,7 +12,7 @@ from torch import nn
 
 from  misc import NestedTensor
 from position_encoding import build_position_encoding
-from Backbone import Backbone,get_named_param_lr_pairs
+from Backbone import Backbone
 
 
 class Joiner(nn.Sequential):
