@@ -41,8 +41,8 @@ class Backbone(nn.Module):
                  vit_encoder_num_layers: int = 6,
                  pretrained_encoder: str=False,
                  window_block_indexes: list=[0,2,4],
-                 drop_path=0.1,
-                 out_channels=256,
+                 drop_path:float=0.1,
+                 out_channels:int=256,
                  out_feature_indexes: list=[1,3,5],
                  projector_scale: list= ['P4'],
                  embed_dim:int =192
@@ -65,7 +65,7 @@ class Backbone(nn.Module):
                 qkv_bias=True,
                 norm_layer=partial(nn.LayerNorm, eps=1e-6),
                 window_block_indexes=window_block_indexes,
-                use_act_checkpoint=True,  # use checkpoint to save memory
+                use_act_checkpoint=False,  # use checkpoint to save memory
                 use_abs_pos=True,
                 out_feature_indexes=out_feature_indexes,
                 use_cae=True)
