@@ -81,7 +81,7 @@ class LWDETR(nn.Module):
         # init prior_prob setting for focal loss
         prior_prob = 0.01
         bias_value = -math.log((1 - prior_prob) / prior_prob)
-        self.class_embed.bias.data = torch.ones(num_classes+1) * bias_value
+        self.class_embed.bias.data = torch.ones(num_classes) * bias_value
 
         # init bbox_mebed
         nn.init.constant_(self.bbox_embed.layers[-1].weight.data, 0)
