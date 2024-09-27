@@ -146,14 +146,14 @@ class SetCriterion(nn.Module):
                 box_ops.box_cxcywh_to_xyxy(target_boxes))[0])
             pos_ious = iou_targets.clone().detach()
 
-            cls_iou_targets = torch.zeros((src_logits.shape[0], src_logits.shape[1],self.num_classes+1),
+            cls_iou_targets = torch.zeros((src_logits.shape[0], src_logits.shape[1],self.num_classes),
                                         dtype=src_logits.dtype, device=src_logits.device)
 
             pos_ind=[id for id in idx]
             pos_ind.append(target_classes_o)
             cls_iou_targets[pos_ind] = pos_ious
             #print(cls_iou_targets)
-            loss_ce = sigmoid_varifocal_loss(src_logits, cls_iou_targets, num_boxes, alpha=self.focal_alpha, gamma=3) * src_logits.shape[1]
+            loss_ce = sigmoid_varifocal_loss(src_logits, cls_iou_targets, num_boxes, alpha=self.focal_alpha, gamma=self.gamma) * src_logits.shape[1]
         else:
             target_classes = torch.full(src_logits.shape[:2], self.num_classes,
                                         dtype=torch.int64, device=src_logits.device)
@@ -330,9 +330,9 @@ def sigmoid_focal_loss(inputs, targets, num_boxes, alpha: float = 0.25, gamma: f
 
 def sigmoid_varifocal_loss(inputs, targets, num_boxes, alpha: float = 0.25, gamma: float = 2):
     prob = inputs.sigmoid()
-    focal_weight = targets * (targets != 0.0).float() + \
+    focal_weight = targets * (targets > 0.0).float() + \
             (1 - alpha) * (prob - targets).abs().pow(gamma) * \
-            (targets == 0.0).float()
+            (targets <= 0.0).float()
     ce_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction="none")
     loss = ce_loss * focal_weight
 
