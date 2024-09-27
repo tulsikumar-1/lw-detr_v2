@@ -155,7 +155,7 @@ class SetCriterion(nn.Module):
             #print(cls_iou_targets)
             loss_ce = sigmoid_varifocal_loss(src_logits, cls_iou_targets, num_boxes, alpha=self.focal_alpha, gamma=3) * src_logits.shape[1]
         else:
-            empty_weight = torch.ones(self.num_classes + 1)
+            empty_weight = torch.ones(self.num_classes + 1,device=src_logits.device)
             empty_weight[-1] = self.focal_alpha
             
  
