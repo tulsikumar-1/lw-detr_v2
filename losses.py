@@ -155,24 +155,17 @@ class SetCriterion(nn.Module):
             #print(cls_iou_targets)
             loss_ce = sigmoid_varifocal_loss(src_logits, cls_iou_targets, num_boxes, alpha=self.focal_alpha, gamma=3) * src_logits.shape[1]
         else:
-            target_classes  = torch.zeros(src_logits.shape[:2], dtype=torch.int64, device=src_logits.device)
-
-
+            target_classes = torch.full(src_logits.shape[:2], self.num_classes,
+                                        dtype=torch.int64, device=src_logits.device)
             target_classes[idx] = target_classes_o
-            # Create a mask for valid indices where target_classes_o is not equal to 0 (background)
-            #valid_mask = target_classes != 0
 
             target_classes_onehot = torch.zeros([src_logits.shape[0], src_logits.shape[1], src_logits.shape[2]+1],
                                                 dtype=src_logits.dtype, layout=src_logits.layout, device=src_logits.device)
-
-            # Update one-hot encoding tensor only for valid positions
             target_classes_onehot.scatter_(2, target_classes.unsqueeze(-1), 1)
-           # target_classes_onehot[~valid_mask] = 0  # Ensure background (0) remains zero
-           
-            target_classes_onehot = target_classes_onehot[:,:,:-1]
-            
 
-            loss_ce = sigmoid_focal_loss(src_logits, target_classes_onehot, num_boxes, alpha=self.focal_alpha, gamma=self.gamma) * src_logits.shape[1]
+            target_classes_onehot = target_classes_onehot[:,:,:-1]
+            loss_ce = sigmoid_focal_loss(src_logits, target_classes_onehot, num_boxes, alpha=self.focal_alpha, gamma=gamma) * src_logits.shape[1]
+            
         losses = {'loss_ce': loss_ce}
 
         if log:
@@ -359,10 +352,18 @@ def position_supervised_loss(inputs, targets, num_boxes, alpha: float = 0.25, ga
 
 
 class PostProcess(nn.Module):
-    """ This module converts the model's output into the format expected by the coco api"""
+    """ This module converts the model's output into the format expected by the COCO API"""
     def __init__(self, num_select=300) -> None:
         super().__init__()
         self.num_select = num_select
+        # Define the reverse mapping from the model's labels to the dataset's original labels
+        self.reverse_class_mapping = {
+            0: 3,  # car
+            1: 1,  # bicycle
+            2: 2,  # bus
+            3: 4,  # motorbike
+            4: 5   # truck
+        }
 
     @torch.no_grad()
     def forward(self, outputs, target_sizes):
@@ -378,20 +379,26 @@ class PostProcess(nn.Module):
         assert len(out_logits) == len(target_sizes)
         assert target_sizes.shape[1] == 2
 
+        # Apply sigmoid to logits and get top-k predictions
         prob = out_logits.sigmoid()
         topk_values, topk_indexes = torch.topk(prob.view(out_logits.shape[0], -1), self.num_select, dim=1)
         scores = topk_values
         topk_boxes = topk_indexes // out_logits.shape[2]
         labels = topk_indexes % out_logits.shape[2]
         boxes = box_ops.box_cxcywh_to_xyxy(out_bbox)
-        boxes = torch.gather(boxes, 1, topk_boxes.unsqueeze(-1).repeat(1,1,4))
+        boxes = torch.gather(boxes, 1, topk_boxes.unsqueeze(-1).repeat(1, 1, 4))
 
-        # and from relative [0, 1] to absolute [0, height] coordinates
+        # Convert from relative [0, 1] to absolute [0, height] coordinates
         img_h, img_w = target_sizes.unbind(1)
         scale_fct = torch.stack([img_w, img_h, img_w, img_h], dim=1)
         boxes = boxes * scale_fct[:, None, :]
 
-        results = [{'scores': s, 'labels': l+1, 'boxes': b} for s, l, b in zip(scores, labels, boxes)]
+        # Reverse the class label mapping
+        #labels = torch.tensor([self.reverse_class_mapping[l.item()] for l in labels.view(-1)]).view(labels.shape)
+
+        # Create result dictionaries
+        results = [{'scores': s, 'labels': l, 'boxes': b} for s, l, b in zip(scores, labels, boxes)]
 
         return results
+
 
